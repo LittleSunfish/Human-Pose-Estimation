@@ -45,7 +45,7 @@ class Bottleneck(nn.Module):
 
 class ResNet50(nn.Module):
 
-    def __init__(self):
+    def __init__(self, num_classes=1000):
         super(ResNet50, self).__init__()
         self.num_blocks = [3,4,6,3]
         
@@ -56,18 +56,22 @@ class ResNet50(nn.Module):
             nn.MaxPool2d(kernel_size=3, stride=2)
         )
         self.conv2 = self._make_layer(in_channels=64, reduced_channels=64, out_channels=256, num_blocks=self.num_blocks[0], stride=1)
-        self.conv3 = self._make_layer(in_channels=256, reduced_channels=128, out_channels=512, num_blocks=self.num_blocks[1], stride=2)
-        self.conv4 = self._make_layer(in_channels=512, reduced_channels=256, out_channels=1024, num_blocks=self.num_blocks[2], stride=2)
-        self.conv5 = self._make_layer(in_channels=1024, reduced_channels=512, out_channels=2048, num_blocks=self.num_blocks[3], stride=2)
+        self.conv3 = self._make_layer(in_channels=256, reduced_channels=128, out_channels=512, num_blocks=self.num_blocks[1], stride=1)
+        self.conv4 = self._make_layer(in_channels=512, reduced_channels=256, out_channels=1024, num_blocks=self.num_blocks[2], stride=1)
+        self.conv5 = self._make_layer(in_channels=1024, reduced_channels=512, out_channels=2048, num_blocks=self.num_blocks[3], stride=1)
         
-        self.avg = nn.AvgPool2d(kernel_size=7)
+        self.avg = nn.AvgPool2d(kernel_size=4)
         # FC layer, after applied 'avg pooling'
-        self.fc1 = nn.Sequential(
-            nn.Linear(in_features=2048, out_features=1000)
+        # self.fc1 = nn.Sequential(
+        #     nn.Linear(in_features=2048, out_features=1000)
+        # )
+
+        # reduce the number of channel to 17 -> number of keypoints
+        self.final = nn.Sequential(
+            nn.Conv2d(in_channels=2048, out_channels=17, kernel_size=1)
         )
 
     def _make_layer(self, in_channels, reduced_channels, out_channels, num_blocks, stride=1):
-        pass
         layers = []
         strides = [stride] + [1]*(num_blocks-1)
 
@@ -79,20 +83,22 @@ class ResNet50(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        out = self.conv1(x)
-        out = self.conv2(out)
-        out = self.conv3(out)
+        out = self.conv1(x)   
+        out = self.conv2(out)   # output: 256*64*48
+        out = self.conv3(out)   # output: 512*32*24
         out = self.conv4(out)
-        out = self.conv5(out)
-        out = self.avg(out)
-        out = out.view(out.size(0), -1)
-        out = self.fc1(out)
+        out = self.conv5(out)   # output: 16*12
+        #out = self.avg(out)
+        #out = out.view(out.size(0), -1)
+
+        ## the input of last layer shoul be in size 64x48 before
+        out = self.final(out)
         return out
 
 def main():
     from torchsummary import summary
 
-    resnet = ResNet50()
+    resnet = ResNet50().cuda()
     summary(resnet, input_size=(3,256,192))
     
 if __name__ == '__main__':

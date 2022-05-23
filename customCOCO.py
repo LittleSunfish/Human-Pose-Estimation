@@ -173,8 +173,8 @@ class CustomCOCO(Dataset):
 
         def gaussian_heatmap(image_size, center_point):
             ro = 0
-            center_x = center_point[0]
-            center_y = center_point[1]
+            center_x = int(center_point[1]*48/192)
+            center_y = int(center_point[0]*64/256)
 
             grid_y, grid_x = np.meshgrid(np.arange(image_size[0]), np.arange(image_size[1]))
             x = grid_x - center_x
@@ -185,7 +185,7 @@ class CustomCOCO(Dataset):
         heatmap_list = []
         self._create_kp_list()
         for i, kp in enumerate(self.keypoint):
-            heatmap_i = gaussian_heatmap((192, 256), kp)
+            heatmap_i = gaussian_heatmap((48, 64), kp)
             heatmap_list.append(heatmap_i)
 
         return heatmap_list

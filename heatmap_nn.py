@@ -1,4 +1,4 @@
-from ResNet50 import ResNet50
+from ResNet50_HPE import ResNet50
 from customCOCO import CustomCOCO
 
 import torch 
@@ -10,6 +10,8 @@ import numpy as np
 import random
 from tqdm import tqdm
 
+PATH = '/home/sojeong/CV/resnet/model'
+
 train_coco_json_path = '/home/sojeong/CV/deep-high-resolution-net.pytorch/data/coco/annotations/person_keypoints_train2017.json'
 train_coco_img_path  = '/home/sojeong/CV/deep-high-resolution-net.pytorch/data/coco/images/train2017/'
 test_coco_json_path = '/home/sojeong/CV/deep-high-resolution-net.pytorch/data/coco/annotations/person_keypoints_val2017.json'
@@ -18,7 +20,7 @@ test_coco_img_path = '/home/sojeong/CV/deep-high-resolution-net.pytorch/data/coc
 training_data = CustomCOCO(train_coco_json_path, train_coco_img_path)
 #test_data = CustomCOCO(test_coco_json_path, test_coco_img_path)
 
-train_dataloader = DataLoader(training_data, batch_size=1, shuffle=True)
+train_dataloader = DataLoader(training_data, batch_size=16, shuffle=True)
 #test_dataloader = DataLoader(test_data, batch_size=64, shuffle=True)
 
 def reset_seed(seed):
@@ -36,23 +38,28 @@ def train(model, n_epoch, loader, optimizer, criterion, device="cpu"):
 
             optimizer.zero_grad()
             outputs = model(images)
-            loss = criterion(input=outputs, target=labels) 
-            loss.backward()
+            # print("size of outputs: ", outputs.shape)
+            # print("size of labels: ", labels.shape)
+            loss = criterion(input=outputs, target=labels)
+            loss.mean().backward()
             optimizer.step()
-            running_loss += loss.item()
+            running_loss += loss.mean().item()
 
         print('Epoch {}, loss = {:.3f}'.format(epoch, running_loss/len(loader)))
     
     print('Training Finished')
 
-reset_seed(0)
-resnet_model = ResNet50()
-criterion = nn.MSELoss(reduction=None)
+resnet_model = ResNet50().cuda()
+resnet_model = resnet_model.cuda(0)
+if torch.cuda.device_count() > 1:
+	  resnet_model = nn.DataParallel(resnet_model) 
+criterion = nn.MSELoss(reduction='none')
 optimizer = optim.SGD(params=resnet_model.parameters(), lr=0.1, momentum=0.9)
 
 ## train
 train(model=resnet_model, n_epoch=3, loader=train_dataloader, optimizer=optimizer, criterion=criterion, device="cuda")
+torch.save(resnet_model, PATH)
 ## test
 #resnet_acc = test(resnet_model, testloader, device="cuda")
 
-print('ResNet Test accuracy: {:.2f}%'.format(resnet_acc))
+#print('ResNet Test accuracy: {:.2f}%'.format(resnet_acc))

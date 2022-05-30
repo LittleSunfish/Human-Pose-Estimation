@@ -58,12 +58,6 @@ class ResNet50(nn.Module):
         self.conv5 = self._make_layer(in_channels=1024, reduced_channels=512, out_channels=2048, num_blocks=self.num_blocks[3], stride=1)
         
         self.avg = nn.AvgPool2d(kernel_size=4)
-        # FC layer, after applied 'avg pooling'
-        # self.fc1 = nn.Sequential(
-        #     nn.Linear(in_features=2048, out_features=1000)
-        # )
-
-        # reduce the number of channel to 17 -> number of keypoints
         self.final = nn.Sequential(
             nn.Conv2d(in_channels=2048, out_channels=17, kernel_size=1)
         )

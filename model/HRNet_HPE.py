@@ -2,6 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class BasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(self, ):
+        pass
+
+    def forward(self, x):
+        pass
+
 class Bottleneck(nn.Module):
     expansion = 4
 
@@ -101,15 +110,15 @@ class HighResolutionModule(nn.Module):
                     while cur - prev_change > 1:
                         downsample = nn.Sequential(
                             nn.Conv2d(num_inchannels[prev], num_inchannels[cur], size=3, stride=2, padding=1, bias=False),
-                            nn.BatchNorm2d(num_inchannels[cur])
+                            nn.BatchNorm2d(num_inchannels[cur]),
+                            nn.ReLU(True)
                         )
                         downsamples.append(downsample)
                         prev_change -= 1
                         
                     final_downsample = nn.Sequential(
                         nn.Conv2d(num_inchannels[prev], num_inchannels[cur], size=3, stride=2, padding=1, bias=False),
-                        nn.BatchNorm2d(num_inchannels[cur]),
-                        nn.ReLU(True)
+                        nn.BatchNorm2d(num_inchannels[cur])
                     )
                     downsamples.append(final_downsample)
                     fuse_layer.append(nn.Sequential(*downsamples))
@@ -118,11 +127,20 @@ class HighResolutionModule(nn.Module):
         return nn.ModuleList(fuse_layers)
 
     def forward(self, x):
-        pass 
+        if self.num_branches == 1:
+            return [self.branches[0](x[0])]
+
+        for i in range(self.num_branches):
+            x[i] = self.branches[i](x[i])
+        
+        x_fuse = []
+        
+        return x_fuse
 
 
 
 class PoseHRNet(nn.Module):
+    # follows w32_256x256_adam_lr1e-3
 
     def __init__(self):
         super(PoseHRNet, self).__init__()
@@ -139,7 +157,15 @@ class PoseHRNet(nn.Module):
         pass
 
     def _make_layer():
-        pass
+        layers = []
+        layers.append(Bottleneck(self.inplanes, planes, stride))
+
+        self.inplanes = planes * block.expansion
+        for i in range(1, block):
+            layers.append(Bottleneck(self.inplanes, planes))
+
+        return nn.Sequential(*layers)
+        
 
     def _make_stage():
         pass

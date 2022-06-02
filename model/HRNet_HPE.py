@@ -300,7 +300,37 @@ class PoseHRNet(nn.Module):
 
     # to levergage pretrained model
     def init_weights():
-        pass
+        # let every parameter to follow normal distribution
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.normal_(m.weight, std=0.001)
+                for name, _ in m.named_parameters():
+                    if name in ['bias']:
+                        nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.ConvTranspose2d):
+                nn.init.normal_(m.weight, std=0.001)
+                for name, _ in m.named_parameters():
+                    if name in ['bias']:
+                        nn.init.constant_(m.bias, 0)
+
+        # follow pre-trained model if exists 
+        if os.path.isfile(pretrained):
+            pretrained_state_dict = torch.load(pretrained)
+            logger.info('=> loading pretrained model {}'.format(pretrained))
+
+            need_init_state_dict = {}
+            for name, m in pretrained_state_dict.items():
+                if name.split('.')[0] in self.pretrained_layers \
+                   or self.pretrained_layers[0] is '*':
+                    need_init_state_dict[name] = m
+            self.load_state_dict(need_init_state_dict, strict=False)
+        elif pretrained:
+            logger.error('=> please download pre-trained models first!')
+            raise ValueError('{} is not exist!'.format(pretrained))
+
 
 def main():
     from torchsummary import summary

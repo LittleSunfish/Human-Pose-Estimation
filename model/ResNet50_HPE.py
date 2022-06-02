@@ -42,7 +42,7 @@ class Bottleneck(nn.Module):
 
 class ResNet50(nn.Module):
 
-    def __init__(self, num_classes=1000):
+    def __init__(self):
         super(ResNet50, self).__init__()
         self.num_blocks = [3,4,6,3]
         

@@ -299,7 +299,7 @@ class PoseHRNet(nn.Module):
         return out
 
     # to levergage pretrained model
-    def init_weights():
+    def init_weights(self, pretrained=''):
         # let every parameter to follow normal distribution
         for m in self.modules():
             if isinstance(m, nn.Conv2d):

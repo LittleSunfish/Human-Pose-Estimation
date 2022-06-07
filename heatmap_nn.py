@@ -1,4 +1,4 @@
-from ResNet50_HPE import ResNet50
+from model import HRNet_HPE
 from customCOCO import CustomCOCO
 
 import torch 
@@ -10,7 +10,7 @@ import numpy as np
 import random
 from tqdm import tqdm
 
-PATH = '/home/sojeong/CV/resnet/model'
+PATH = '/home/sojeong/CV/resnet/model_hrnet'
 
 train_coco_json_path = '/home/sojeong/CV/deep-high-resolution-net.pytorch/data/coco/annotations/person_keypoints_train2017.json'
 train_coco_img_path  = '/home/sojeong/CV/deep-high-resolution-net.pytorch/data/coco/images/train2017/'
@@ -49,16 +49,16 @@ def train(model, n_epoch, loader, optimizer, criterion, device="cpu"):
     
     print('Training Finished')
 
-resnet_model = ResNet50().cuda()
-resnet_model = resnet_model.cuda(0)
+model = PoseHRNet().cuda()
+model = model.cuda(0)
 if torch.cuda.device_count() > 1:
-	  resnet_model = nn.DataParallel(resnet_model) 
+	  model = nn.DataParallel(model) 
 criterion = nn.MSELoss(reduction='none')
-optimizer = optim.SGD(params=resnet_model.parameters(), lr=0.1, momentum=0.9)
+optimizer = optim.SGD(params=model.parameters(), lr=0.1, momentum=0.9)
 
 ## train
-train(model=resnet_model, n_epoch=3, loader=train_dataloader, optimizer=optimizer, criterion=criterion, device="cuda")
-torch.save(resnet_model, PATH)
+train(model=model, n_epoch=3, loader=train_dataloader, optimizer=optimizer, criterion=criterion, device="cuda")
+torch.save(model, PATH)
 ## test
 #resnet_acc = test(resnet_model, testloader, device="cuda")
 

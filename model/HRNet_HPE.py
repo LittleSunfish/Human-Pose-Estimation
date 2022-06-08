@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
-monitor = 0
+monitor = 1
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -16,14 +16,14 @@ class BasicBlock(nn.Module):
             nn.ReLU(inplace=True)
         )
         self.conv2 = nn.Sequential(
-            nn.Conv2d(inplanes, planes, kernel_size=3),
+            nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride, padding=1, bias=False),
             nn.BatchNorm2d(planes)
         )
         self.shortcut = nn.Sequential()
         if stride != 1 or inplanes != self.expansion * planes:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(inplanes, self.expansion*planes,
-                          kernel_size=1, stride=stride, bias=False),
+                          kernel_size=1, stride=stride, padding=1, bias=False),
                 nn.BatchNorm2d(self.expansion*planes)
             )
         self.final_relu = nn.ReLU(inplace=True)
@@ -92,7 +92,7 @@ class HighResolutionModule(nn.Module):
 
     def _make_one_branch(self, block, branch_index, num_blocks, num_channels, stride=1):
         layers = []
-        print("values: ", self.num_inchannels, branch_index, num_channels)
+        # if monitor: print("values: ", self.num_inchannels, branch_index, num_channels)
         # one fundamental layer
         layers.append(
             block(self.num_inchannels[branch_index], num_channels[branch_index], stride=1)
@@ -140,8 +140,8 @@ class HighResolutionModule(nn.Module):
                     prev_change = prev
                     while cur - prev_change > 1:
                         downsample = nn.Sequential(
-                            nn.Conv2d(num_inchannels[prev], num_inchannels[cur], kernel_size=3, stride=2, padding=1, bias=False),
-                            nn.BatchNorm2d(num_inchannels[cur]),
+                            nn.Conv2d(num_inchannels[prev], num_inchannels[prev], kernel_size=3, stride=2, padding=1, bias=False),
+                            nn.BatchNorm2d(num_inchannels[prev]),
                             nn.ReLU(True)
                         )
                         downsamples.append(downsample)
@@ -156,6 +156,7 @@ class HighResolutionModule(nn.Module):
             fuse_layers.append(nn.ModuleList(fuse_layer))    
         
         return nn.ModuleList(fuse_layers)
+
 
     def get_num_inchannels(self):
         return self.num_inchannels
@@ -211,7 +212,20 @@ class PoseHRNet(nn.Module):
         num_channels = [32, 64]
         num_channels = [num_channels[i] * self.block.expansion for i in range(len(num_channels))]
         self.transition1 = self._make_transition_layer([256], num_channels)
-        if monitor ==1 : print("HRNet, __init__ transition1: \n", self.transition1)
+        # c = 32
+        # self.transition1 = nn.ModuleList([
+        #     nn.Sequential(
+        #         nn.Conv2d(256, c, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),
+        #         nn.BatchNorm2d(c),
+        #         nn.ReLU(inplace=True),
+        #     ),
+        #     nn.Sequential(nn.Sequential(  # Double Sequential to fit with official pretrained weights
+        #         nn.Conv2d(256, c * (2 ** 1), kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False),
+        #         nn.BatchNorm2d(c * (2 ** 1)),
+        #         nn.ReLU(inplace=True),
+        #     )),
+        # ])
+        # if monitor ==1 : print("HRNet, __init__ transition1: \n", self.transition1)
         self.stage2, pre_num_channel = self._make_stage(BasicBlock, 1, 2, [4,4], [32,64], num_channels)
         if monitor ==1 : print("HRNet, __init__, stage2 completed")
 
@@ -243,9 +257,9 @@ class PoseHRNet(nn.Module):
                 if num_channels_cur_layer[i] != num_channels_pre_layer[i]:
                     tran_layer = nn.Sequential(
                         nn.Conv2d(num_channels_pre_layer[i], num_channels_cur_layer[i], kernel_size=3, stride=1, padding=1, bias=False),
-                        nn.BatchNorm2d(num_channels_cur_layer[i], 
-                        nn.ReLU())
-                    ) 
+                        nn.BatchNorm2d(num_channels_cur_layer[i]), 
+                        nn.ReLU()
+                        )
                     transition_layers.append(tran_layer)
                 else:
                     transition_layers.append(None)
@@ -305,9 +319,8 @@ class PoseHRNet(nn.Module):
 
         tr_out = []
         for i in range(2):
-            if monitor ==1: print("HRNet, forward, transition1: \n", self.transition1)
+            # if monitor ==1: print("HRNet, forward, transition1: \n", self.transition1)
             if self.transition1[i] is not None:
-
                 tr_out.append(self.transition1[i](out))
             else:
                 print("NONE")

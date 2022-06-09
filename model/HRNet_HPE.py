@@ -128,8 +128,8 @@ class HighResolutionModule(nn.Module):
                 if prev > cur:
                     # upsample
                     upsample = nn.Sequential(
-                        nn.Conv2d(num_inchannels[prev], num_inchannels[prev], kernel_size=1, stride=1, padding=0, bias=False),
-                        nn.BatchNorm2d(num_inchannels[prev]),
+                        nn.Conv2d(num_inchannels[prev], num_inchannels[cur], kernel_size=1, stride=1, padding=0, bias=False),
+                        nn.BatchNorm2d(num_inchannels[cur]),
                         nn.Upsample(scale_factor=2**(prev-cur),mode='nearest')
                     )
                     fuse_layer.append(upsample)
@@ -168,7 +168,7 @@ class HighResolutionModule(nn.Module):
 
         for i in range(self.num_branches):
             x[i] = self.branches[i](x[i])
-        if monitor == 1: print("Module, forward, make branches done")
+        #if monitor == 1: print("Module, forward, make branches done")
         
         x_fuse = []
         
@@ -323,7 +323,6 @@ class PoseHRNet(nn.Module):
             if self.transition1[i] is not None:
                 tr_out.append(self.transition1[i](out))
             else:
-                print("NONE")
                 tr_out.append(out)
             #tr_out.append(self.transition1[i](out) if self.transition1[i] is not None else out)
         out = self.stage2(tr_out)

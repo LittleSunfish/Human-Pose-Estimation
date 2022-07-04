@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
-monitor = 1
+monitor = 0
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -99,6 +99,7 @@ class HighResolutionModule(nn.Module):
         )
 
         # layers according to num_blocks[branch_index]
+        self.num_inchannels[branch_index] = num_channels[branch_index]*block.expansion
         for i in range(num_blocks[branch_index]):
             layers.append(
                 block(self.num_inchannels[branch_index], num_channels[branch_index])
@@ -244,7 +245,7 @@ class PoseHRNet(nn.Module):
         if monitor ==1 : print("HRNet, __init__, stage4 completed")
 
         ## regressor: estimating the heatmaps where the keypoints are chosen and tranformed to the full resolution
-        self.final_layer = nn.Conv2d(pre_num_channel[0], 16, kernel_size=1, stride=1, padding=0)
+        self.final_layer = nn.Conv2d(pre_num_channel[0], 17, kernel_size=1, stride=1, padding=0)
 
 
     def _make_transition_layer(self, num_channels_pre_layer, num_channels_cur_layer):
@@ -333,6 +334,7 @@ class PoseHRNet(nn.Module):
             tr_out.append(self.transition2[i](out[-1]) if self.transition2[i] is not None else out[i])
         out = self.stage3(tr_out)
 
+        tr_out = []
         for i in range(4):
             tr_out.append(self.transition3[i](out[-1]) if self.transition3[i] is not None else out[i])
         out = self.stage4(tr_out)
@@ -375,10 +377,11 @@ class PoseHRNet(nn.Module):
 
 
 def main():
-    from torchsummary import summary
 
     hrnet = PoseHRNet().cuda()
-    summary(hrnet, input_size=(3,256,192))
+    data = torch.zeros(4, 3, 256, 192).cuda() 
+    result = hrnet(data)
+    print("result: ", result.shape)
     
 if __name__ == '__main__':
     main()

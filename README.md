@@ -20,4 +20,4 @@ I implmented some tools related to the human pose estimation.
 customCOCO.py contains implementaion of the dataloader for the COCO dataset.
 visualization.py contains a way to visualize the keypoint detection.
 ### 3.3 jupyter
-You can ignore this file. I work with notebook file and then move onto the script.
+You can ignore this folder. I work with notebook file and then move onto the script.

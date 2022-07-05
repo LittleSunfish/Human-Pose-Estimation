@@ -19,3 +19,5 @@ For comparision of the HRNet to ResNet, there is also ResNet50_HPE.py in the sam
 I implmented some tools related to the human pose estimation.
 customCOCO.py contains implementaion of the dataloader for the COCO dataset.
 visualization.py contains a way to visualize the keypoint detection.
+### 3.3 jupyter
+You can ignore this file. I work with notebook file and then move onto the script.

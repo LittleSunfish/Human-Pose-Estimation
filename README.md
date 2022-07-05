@@ -9,6 +9,7 @@
 https://arxiv.org/abs/1603.06937
 ### Deep High-Resolution Representation Learning for Human Pose Estimation
 https://arxiv.org/abs/1902.09212
+you can find my own summarization of this paper here: (to be filled)
 
 ## 3. Explanation about this Repo
 This repository is for mainly for re-implementaion of HRNet.
